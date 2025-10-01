@@ -8,6 +8,8 @@ import seaborn as sns
 from scipy import stats
 from sklearn.metrics import f1_score, r2_score,auc, precision_recall_curve, roc_curve
 
+from score_maximisation import score
+
 colors = ['#11999E', '#40514E', '#FFB22C']
 
 def run_wmw_test():
@@ -842,11 +844,11 @@ def map_species():
     loc_path = 'data/GeoLifeCLEF_metadata_train.csv'
     metrics = ['F1','F2']
 
-    sol_path = "data/rls_train_species.csv"
-    probas_path = "data/rls_train_probas.csv"
-    path_base = 'submissions/predictions_rls_train_'
-    loc_path = 'data/rls_metadata.csv'
-    metrics = ['F1','F2']
+    # sol_path = "data/rls_train_species.csv"
+    # probas_path = "data/rls_train_probas.csv"
+    # path_base = 'submissions/predictions_rls_train_'
+    # loc_path = 'data/rls_metadata.csv'
+    # metrics = ['F1','F2']
 
     list_pred = []
     for metric in metrics:
@@ -856,7 +858,6 @@ def map_species():
     
     probas = p.read_csv(probas_path)
 
-    # species_idx = 302
     # species_name = probas.columns[species_idx+1]
     # print(species_name)
 
@@ -866,7 +867,9 @@ def map_species():
     # species_name = "Trygonoptera imitata" 
     species_name = "Achoerodus viridis"
 
-    species_idx = probas.columns.to_list().index(species_name) -1
+    # species_idx = probas.columns.to_list().index(species_name) -1
+    species_idx = 302
+
     print(species_idx)
 
     surveys = probas['surveyId'].to_numpy(dtype=str)
@@ -882,7 +885,6 @@ def map_species():
                 llcrnrlon= int(lon.min()),urcrnrlon= int(lon.max() +1),lat_ts= 20, resolution='i')
 
     x, y = m(lon, lat)
-
     ## map species probabilities
     plt.figure()
     m.drawcoastlines(color='black', linewidth=0.5)
@@ -967,7 +969,7 @@ def map_iucn():
     probas_path = "data/rls_train_probas.csv"
     path_base = 'submissions/predictions_rls_train_'
     loc_path = 'data/rls_metadata.csv'
-    metrics = ['F1','F2']
+    metrics = ['F1','F5']
 
     list_pred = []
     for metric in metrics:
@@ -1087,10 +1089,109 @@ def map_iucn():
     plt.show()
 
 
+def score_comp():
+
+    plt.rcParams.update({
+        "text.usetex": True,
+        "font.family": "serif",
+        "font.serif": ["Computer Modern Roman"],
+        "axes.labelsize": 24,
+        "legend.fontsize": 14,
+        "xtick.labelsize": 14,
+        "ytick.labelsize": 14,
+    })
+
+    spec_file = 'data/cleaned_GeoLifeCLEF_species.csv'
+    pred_file = 'submissions/pred_GLC_F1_t.csv'
+    pred_file2 = 'submissions/predictions_GLC_F1.csv'
+    probas_file = 'data/cleaned_GeoLifeCLEF_probas.csv'
+
+    # spec_file = 'data/rls_test_species.csv'
+    # pred_file = 'submissions/predictions_rls_F1_t.csv'
+    # pred_file2 = 'submissions/predictions_rls_F1.csv'
+    # probas_file = 'data/rls_test_probas.csv'
+
+    pred_df = p.read_csv(pred_file)
+    pred_df2 = p.read_csv(pred_file2)["speciesId"]
+
+    surveys = pred_df['surveyId']
+    pred_df = pred_df['speciesId']
+
+    probas = p.read_csv(probas_file)
+    probas = probas.merge(surveys, how = 'right', on='surveyId')
+    probas = probas.iloc[:, 1:].to_numpy(dtype=np.float32)
+    S,N = probas.shape
 
 
+    species = p.read_csv(spec_file)
+    species = species.merge(surveys, how = 'right', on='surveyId')
+    species = species['speciesId'].to_numpy(dtype=str)
+
+    T = np.zeros((S,N))
+
+    for i in range(S) :
+        r_sol = species[i]
+        if str(r_sol) != 'nan':
+            r_sol = r_sol.split(' ')
+            for id in r_sol:
+                T[i, int(id)] = 1
+
+    T = T.T #
+    S, N = N, S #
+
+    Prev = (np.sum(T, axis = 0)+1)/S
 
 
+    Hue = 0.01/(Prev+0.01)
+    norm = mcolors.TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)
+
+    S, N = N, S #
+    Y1 = np.zeros((S,N))
+    Y2 = np.zeros((S,N))
+    for i in range(S) :
+        r_sol = pred_df[i]
+        if str(r_sol) != 'nan':
+            r_sol = r_sol.split(' ')
+            for id in r_sol:
+                Y1[i, int(id)] = 1
+
+        r_sol = pred_df2[i]
+        if str(r_sol) != 'nan':
+            r_sol = r_sol.split(' ')
+            for id in r_sol:
+                Y2[i, int(id)] = 1
+    
+    Y1 , Y2 = Y1.T, Y2.T #
+    S, N = N, S #
+
+    func = lambda y_true, y_pred : f1_score(y_true, y_pred, zero_division=0)
+
+    S1 = np.zeros(N)
+    S2 = np.zeros(N)
+    for j in range(N):
+
+        S1[j] = func(T[:, j], Y1[:, j])
+        S2[j] = func(T[:, j], Y2[:, j])
+
+    print(np.mean(S1), np.mean(S2))
+    plt.figure(figsize=(10, 10))
+    plt.scatter(x= Prev, y= S2 - S1, s=20, c= Hue, linewidth=0, alpha = 0.5, cmap ='mako_r')
+    X = np.arange(1/S, max(Prev)+1/S, 1/S)
+    Y = np.zeros_like(X)
+    for i in range(len(X)):
+        bin_mask = (Prev >= X[i]) * (Prev < X[i+1]) if i < len(X)-1 else (Prev >= X[i])
+        if np.sum(bin_mask) > 0:
+            Y[i] = np.mean(S2[bin_mask]- S1[bin_mask])
+    
+
+    plt.plot(X, Y, color = colors[0], linewidth=1)
+    plt.axhline(0, color= colors[2])
+    plt.xlim(1/S, max(Prev))
+    plt.xscale('log')
+    plt.ylim(-0.5, 0.5)
+    plt.grid(linewidth = 1)
+    plt.tight_layout()
+    plt.show()
 
 def plot_prev():
 
@@ -1164,7 +1265,7 @@ def plot_prev():
 
     # plt.title( "Predicted train prevalence F1 versus Train prevalence \n R2log : " + str(round(r2_score(np.log(T), np.log(Ytr1)),2)) \
             #   + ", R2 : " + str(round(r2_score(T, Ytr1),2)), fontsize = 18)
-    plt.xlabel("Train prevalence (log scale)",)
+    plt.xlabel("Prevalence (log scale)",)
     plt.ylabel("Predicted prevalence (log scale)")
     plt.gca().set_aspect('equal')
     plt.xlim(1/Str, B)
@@ -1266,8 +1367,9 @@ def plot_prev():
 
 
 #hill_numbers()
-map_iucn()
-#map_species()
+# map_iucn()
+# score_comp()
+map_species()
 #plot_calibration_curve()
 #plot_species_richness_all()
 #plot_aucs()

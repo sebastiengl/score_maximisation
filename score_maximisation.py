@@ -291,7 +291,7 @@ def iterate(SOL, PROBAS, P_CALIB, T_CALIB, func, args, max_func):
 
         KLIST[i] = np.array([Ktopk, Kt, Kf,C, K0_5, Ksum , K, np.sum(tar)])
         SCORE[i] = np.array([U_topk, U_t, U_f, U_c, U_0_5, U_sum, U])
-        OUTPUT.append(sort[:K])
+        OUTPUT.append(sort[:Kt])
 
     print("Top K        :" , np.mean(SCORE[:,0]))
     print("Th t         :" , np.mean(SCORE[:,1]))
@@ -495,7 +495,7 @@ def iterate_t(SOL, PROBAS, P_CALIB, T_CALIB, func, args, max_func):
 
         KLIST[j] = np.array([Ks, Kt, Kf,C, K0_5, Ksum , K, np.sum(tar)])
         SCORE[j] = np.array([U_s, U_t, U_f, U_c, U_0_5, U_sum, U])
-        OUTPUT.append(sort[:K])
+        OUTPUT.append(sort[:Ks])
 
     print("Th t_s       :" , np.mean(SCORE[:,0]))
     print("Th t         :" , np.mean(SCORE[:,1]))
