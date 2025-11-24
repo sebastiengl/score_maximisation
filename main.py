@@ -2,7 +2,7 @@ import numpy as np
 import pandas as p
 import numba
 import configparser
-
+import os
 
 np.random.seed(1312)
 
@@ -338,10 +338,7 @@ def iterate_maxexp(SOL, PROBAS, func, args, max_func):
 
         OUTPUT.append(sort[:K])
 
-        K0 = KLIST[:,0]/np.mean(KLIST[:,0])
-        K1 = KLIST[:,1]/np.mean(KLIST[:,1])
-
-    print("MaxExp :" , 1 - np.mean((K0 - K1)**2)/np.var(K1))
+    print("MaxExp :" , np.mean(SCORE[:,0]))
 
     return OUTPUT, KLIST,SCORE
 
@@ -511,13 +508,15 @@ def main():
 
     ## CONFIGURATION FILE ##
     config = configparser.ConfigParser()
-    config.read('parameters.ini')
+    config.read('config.ini')
 
     ## DEFINE FILE PATH ##
-    sol_file =  config['File paths']['sol_file']
-    pred_file = config['File paths']['pred_file']
-    tcalib_file = config['File paths']['tcalib_file']
-    pcalib_file = config['File paths']['pcalib_file'] 
+    data_path = config['File paths']['data_path']
+    cs = config['File paths']['case_study']
+    sol_file = data_path + f'CS{cs}_test_species.csv'
+    pred_file = data_path + f'CS{cs}_test_probas.csv'
+    tcalib_file = data_path + f'CS{cs}_train_species.csv'
+    pcalib_file = data_path + f'CS{cs}_train_probas.csv'
 
     ## DEFINE PARAMETERS OF EXPERIMENT ##
     pval = float(config['Experiment']['prob_val'])
@@ -659,13 +658,13 @@ def main():
     else:
         output, nb_species , score = iterate(SOL, PROBAS, P_CALIB, T_CALIB, func, args, max_func)
 
-
-
-
+    if not os.path.exists('predictions'):
+        os.makedirs('predictions')
+    
     p.DataFrame(
         score, 
         columns = ['MaxExp'] if only_maxexp else ['TopK', 'Th t', 'Th t_f', 'C_opti', 'Th t_0.5', 'Sum', 'MaxExp']
-        ).to_csv("submissions/score_distrib.csv", index = False)
+        ).to_csv("predictions/score_distrib.csv", index = False)
 
     if transpose:
         data_concatenated = ['']*S
@@ -676,26 +675,15 @@ def main():
                     data_concatenated[id_site] = str(id_spec)
                 else:
                     data_concatenated[id_site] += ' ' + str(id_spec)
-
-        p.DataFrame(
-            nb_species, 
-            columns = ['Th_t_s', 'Th t', 'Th t_f', 'C_opti', 'Th t_0.5', 'Sum', 'MaxExp', 'True'] 
-            ).to_csv("submissions/nb_sites.csv", index = False)
     
     else :
         data_concatenated = [' '.join(map(str, row)) for row in output]
     
 
-        p.DataFrame(
-            nb_species, 
-            columns = ["MaxExp", "True"] if only_maxexp else ['TopK', 'Th t', 'Th t_f', 'C_opti', 'Th t_0.5', 'Sum', 'MaxExp', 'True']
-            ).to_csv("submissions/nb_species.csv", index = False)
-
-
     p.DataFrame(
         {'surveyId': surveys,
         'speciesId': data_concatenated,
-        }).to_csv("submissions/binary_predictions.csv", index = False)
+        }).to_csv("predictions/binary_predictions.csv", index = False)
         
 if __name__ == "__main__":
     main()
