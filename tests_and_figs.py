@@ -4,6 +4,7 @@ import numpy as np
 import pandas as p
 import seaborn as sns
 from scipy import stats
+import os
 from sklearn.metrics import r2_score
 
 
@@ -75,6 +76,8 @@ def plot_calibration_curve(case_study, subset = 'train', path = 'data/', ):
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     plt.tight_layout()
+    if not os.path.exists('figures/'):
+        os.makedirs('figures/')
     plt.savefig(f'figures/calibration_curve_CS{case_study}_{subset}.svg')
 
 
@@ -150,6 +153,8 @@ def plot_prev(case_study =1, data_path = 'data/'):
     plt.yscale('log')
     plt.grid(linewidth = 1)
     plt.tight_layout()
+    if not os.path.exists('figures/'):
+        os.makedirs('figures/')
     plt.savefig('figures/prev_f1.svg')
 
 
@@ -238,10 +243,10 @@ def plot_prev(case_study =1, data_path = 'data/'):
     plt.show()
 
 
+
 ## RUN PERMUTATION TEST OF PREVIOUS RUN ##
 
 #run_permutation_test()
-
 
 
 ## PLOT CALIBRATION CURVE ##
