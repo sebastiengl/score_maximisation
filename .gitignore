@@ -1,6 +1,6 @@
-data/
-predictions/
-figures/
+data/*
+predictions/*
+figures/*
 __pycache__/
 !predictions/pred_CS1_F1.csv
 !predictions/pred_CS1_F2.csv
