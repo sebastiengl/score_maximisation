@@ -52,7 +52,7 @@ ALPHA_PA      <- -0.05        # slope for logistic PA conversion
 COLOR_TRAIN  <- "#2166AC"   # blue
 COLOR_TEST   <- "#B2182B"   # red
 TRAIN_RATIO  <- 0.83
-BORN_SUP <- 0.8
+BORN_SUP <- 0.2
 
 
 PATH <- sprintf("data_%d_%0.2f",N_SPECIES, BORN_SUP)
@@ -72,9 +72,9 @@ env_values <- raster::extract(env_stack, site_cells)
 # Coerce to data.frame and ensure layer names
 env_df <- as.data.frame(env_values)
 names(env_df) <- names(env_stack)
-survey_env_df <- data.frame(survey_Id = seq_len(nsites), env_df, stringsAsFactors = FALSE)
-write.csv(survey_env_df, file = paste(PATH, "survey_env.csv", sep=""), row.names = FALSE)
-message("Saved environmental table to survey_env.csv (survey_Id + env variables)")
+survey_env_df <- data.frame(surveyId = seq_len(nsites), env_df, stringsAsFactors = FALSE)
+write.csv(survey_env_df, file = paste(PATH, "/survey_env.csv", sep=""), row.names = FALSE)
+message("Saved environmental table to survey_env.csv (surveyId + env variables)")
 
 
 # ---- Spatial train/test split using  patches (5:1 ratio) ----
@@ -155,7 +155,7 @@ p <- ggplot() +
   )
 
 # Save map as PNG
-ggsave(paste(PATH, "split_map.png", sep=""), plot = p, width = 12, height = 8, dpi = 300)
+ggsave(paste(PATH, "/split_map.png", sep=""), plot = p, width = 12, height = 8, dpi = 300)
 
 
 # ---- Compute the PCA on data) ----
@@ -232,7 +232,7 @@ for (j in seq_len(N_SPECIES)) {
 # Save probabilities as CSV, split into train/test like simu_model.py
 proba_cols <- paste0("sp_", seq_len(N_SPECIES) - 1)
 proba_df <- data.frame(
-  survey_Id = seq_len(nsites)
+  surveyId = seq_len(nsites)
 )
 for (j in seq_len(N_SPECIES)) {
   proba_df[[proba_cols[j]]] <- suitability_mat[, j]
@@ -244,8 +244,8 @@ proba_test  <- proba_df[test_indices, ]
 
 
 
-write.csv(proba_train, file = paste(PATH ,"CS4_train_probas.csv", sep=""), row.names = FALSE)
-write.csv(proba_test,  file = paste(PATH ,"CS4_test_probas.csv", sep=""),  row.names = FALSE)
+write.csv(proba_train, file = paste(PATH ,"/CS4_train_probas.csv", sep=""), row.names = FALSE)
+write.csv(proba_test,  file = paste(PATH ,"/CS4_test_probas.csv", sep=""),  row.names = FALSE)
 message("Probabilities saved")
 
 # ---- Generate presence-absence by Bernoulli sampling ----
@@ -265,8 +265,8 @@ species_strings <- apply(presence_mat, 1, function(row) {
 })
 
 survey_df <- data.frame(
-  survey_Id = seq_len(nsites),
-  species   = species_strings,
+  surveyId = seq_len(nsites),
+  speciesId   = species_strings,
   stringsAsFactors = FALSE
 )
 
@@ -276,8 +276,8 @@ survey_train <- survey_df[train_indices, ]
 survey_test  <- survey_df[test_indices, ]
 
 # Write split CSVs
-write.csv(survey_train, file = paste(PATH ,"CS4_train_species.csv", sep=""), row.names = FALSE)
-write.csv(survey_test,  file = paste(PATH ,"CS4_test_species.csv", sep=""),  row.names = FALSE)
+write.csv(survey_train, file = paste(PATH ,"/CS4_train_species.csv", sep=""), row.names = FALSE)
+write.csv(survey_test,  file = paste(PATH ,"/CS4_test_species.csv", sep=""),  row.names = FALSE)
 
 
 message("DONE")
