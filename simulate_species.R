@@ -43,7 +43,7 @@ message(sprintf("Environmental stack: %d layers, %d x %d cells",
 
 # ---- 2. Simulation parameters ----
 
-N_SPECIES    <- 10
+N_SPECIES    <- 100
 N_SITES      <- 2000 
 ALPHA_PA      <- -0.05        # slope for logistic PA conversion 
 
@@ -52,7 +52,7 @@ ALPHA_PA      <- -0.05        # slope for logistic PA conversion
 COLOR_TRAIN  <- "#2166AC"   # blue
 COLOR_TEST   <- "#B2182B"   # red
 TRAIN_RATIO  <- 0.83
-BORN_SUP <- 0.2
+BORN_SUP <- 0.5
 
 
 PATH <- sprintf("data_%d_%0.2f",N_SPECIES, BORN_SUP)
